@@ -1,0 +1,6 @@
+[submodule "client"]
+	path = client
+	url = git@github.com:tartexs/saksoff5th_client.git
+[submodule "api"]
+	path = api
+	url = git@github.com:tartexs/saksoff5th_api.git
