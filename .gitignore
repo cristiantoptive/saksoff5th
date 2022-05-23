@@ -44,3 +44,12 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Docker Setup files
+volumes/*
+!volumes/s3-storage
+volumes/s3-storage/*
+!volumes/s3-storage/.init
+!volumes/mysql
+volumes/mysql/*
+!volumes/mysql/.init

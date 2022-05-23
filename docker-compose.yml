@@ -1,0 +1,90 @@
+version: '3.5'
+
+services:
+  saksoff5th-api:
+    build:
+      context: '.'
+      dockerfile: ./Dockerfile.api
+    container_name: api
+    volumes:
+      - ./api:/home/node/app/api
+    ports:
+      - 3000:3000
+    depends_on:
+      - saksoff5th-db
+      - saksoff5th-localstack
+    environment:
+      - TYPEORM_HOST=saksoff5thdb
+      - TYPEORM_USERNAME=root
+      - TYPEORM_PASSWORD=securerootpassword
+      - S3_USER=local_user
+      - S3_BUCKET_NAME=com.saksoff5th.storage
+      - S3_ACCESS_KEY=test
+      - S3_SECRET_KEY=test
+      - S3_LOCALSTACK_ENDPOINT=http://saksoff5thS3:4566
+    working_dir: /home/node/app/api
+    command: bash -c "npm install && npm run migration:run && npm run fixtures:run && npm run dev"
+    networks:
+      backend:
+        aliases:
+          - saksoff5thapi
+
+  saksoff5th-client:
+    image: node:14.17.3
+    container_name: client
+    volumes:
+      - ./client:/home/node/app/client
+    ports:
+      - 4200:4200
+    depends_on:
+      - saksoff5th-api
+    environment:
+      - API_URL=http://saksoff5thapi:3000
+    working_dir: /home/node/app/client
+    command: bash -c "npm install && npm run dev"
+    networks:
+      backend:
+        aliases:
+          - saksoff5thcli
+
+  saksoff5th-db:
+    image: mysql:8.0
+    container_name: db
+    volumes:
+      - ./volumes/mysql/.init/init.sql:/data/application/init.sql
+      - ./volumes/mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=securerootpassword
+    ports:
+      - 3307:3306
+    depends_on:
+      - saksoff5th-localstack
+    command: --init-file /data/application/init.sql
+    networks:
+      backend:
+        aliases:
+          - saksoff5thdb
+
+  saksoff5th-localstack:
+    container_name: localstack
+    image: localstack/localstack:0.12.5
+    ports:
+      - 4510-4559:4510-4559
+      - 4566:4566
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    volumes:
+      - ./volumes/s3-storage/.init:/docker-entrypoint-initaws.d
+      - ./volumes/s3-storage/.localstack:/tmp/localstack
+    networks:
+      backend:
+        aliases:
+          - saksoff5thS3
+
+networks:
+  backend:
+    name: saksoff5th-network
